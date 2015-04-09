@@ -10,6 +10,10 @@ from head_ref.msg import HeadReferenceAction, HeadReferenceGoal
 
 from ed_sensor_integration.srv import MakeSnapshot
 
+from std_msgs.msg import Header
+from tf.transformations import numpy as np
+from tf.transformations import euler_matrix
+
 class Head():
     def __init__(self, robot_name):
         self._robot_name = robot_name
@@ -98,6 +102,21 @@ class Head():
         goal.point.z = 1.6
 
         return self.look_at_point(goal)
+
+    def look_at_direction(self, ai, aj, ak, axes='sxyz', distance=10):
+        """
+        Look into the direction of Euler angles and axis sequence.
+
+        ai, aj, ak : Euler's roll, pitch and yaw angles
+        axes : One of 24 axis sequences as string or encoded tuple
+        """
+        R = euler_matrix(ai, aj, ak, axes)
+        v = np.dot(R[:3,:3], [distance, 0, 0])
+
+        header = Header(stamp=rospy.Time.now(), frame_id="/"+self._robot_name+"/base_link")
+        ps = PointStamped(header=header, point=Point(*v))
+        self.look_at_point(ps)
+
 
     # -- Functionality --
 
