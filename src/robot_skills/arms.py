@@ -207,6 +207,54 @@ class Arm(object):
                 rospy.logerr('grasp precompute goal failed: \n%s', repr(myargs))
                 return False
 
+    def send_delta_goal(self, px, py, pz, roll, pitch, yaw, 
+                            timeout=30, 
+                            pre_grasp = False, 
+                            frame_id = '/base_link', 
+                            use_offset = False, 
+                            first_joint_pos_only=False):
+        """Send arm to an offset with respect to current position: 
+        Using a position px,py,pz. An orientation roll,pitch,yaw. A time out time_out. 
+        """
+
+        # save the arguments for debugging later
+        myargs = locals()
+        
+        # create goal:
+        grasp_precompute_goal = GraspPrecomputeGoal()
+        grasp_precompute_goal.delta.header.frame_id = frame_id
+        grasp_precompute_goal.delta.header.stamp = rospy.Time.now()
+        
+        grasp_precompute_goal.PERFORM_PRE_GRASP = pre_grasp
+        grasp_precompute_goal.FIRST_JOINT_POS_ONLY = first_joint_pos_only
+        
+        grasp_precompute_goal.delta.x = px
+        grasp_precompute_goal.delta.y = py
+        grasp_precompute_goal.delta.z = pz
+        
+        grasp_precompute_goal.delta.roll = roll
+        grasp_precompute_goal.delta.pitch = pitch
+        grasp_precompute_goal.delta.yaw = yaw
+        
+        #rospy.loginfo("Arm goal: {0}".format(grasp_precompute_goal))
+        
+        self._publish_marker(grasp_precompute_goal, "red")
+        
+        if timeout == 0.0:
+            self._ac_grasp_precompute.send_goal(grasp_precompute_goal)
+            return True
+        else:
+            result = self._ac_grasp_precompute.send_goal_and_wait(
+                grasp_precompute_goal,
+                execute_timeout=rospy.Duration(timeout)
+            )
+            if result == GoalStatus.SUCCEEDED:
+                return True
+            else:
+                # failure
+                rospy.logerr('grasp precompute goal failed: \n%s', repr(myargs))
+                return False
+
     def send_joint_goal(self, configuration):
         '''
         Send a named joint goal (pose) defined in the parameter default_configurations to the arm
