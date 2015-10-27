@@ -10,6 +10,26 @@ env:
 notifications:
   - email: false
 
+sudo: false
+addons:
+  apt:
+    packages:
+    - chrony
+    - g++
+    - libapache2-svn
+    - libcap2-bin
+    - libfreenect-dev
+    - libfreenect libfreenect-dev libfreenect-demos
+    - nodejs
+    - python-catkin-pkg
+    - python-pip
+    - python-rosinstall
+    - ruby
+    # - $TUE_INSTALL_SYSTEMS" >> $INSTALL_DETAILS_FILE
+    - git
+    # - $pkgs_to_install
+    - ros-hydro-ros-base cmake python-catkin-pkg python-empy python-nose python-setuptools libgtest-dev build-essential
+
 before_install:
   - CI_SOURCE_PATH=$(pwd)
   - REPOSITORY_NAME=${PWD##*/}
