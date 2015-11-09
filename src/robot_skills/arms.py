@@ -5,6 +5,8 @@ import tf_server
 import visualization_msgs.msg
 import std_msgs.msg
 
+import sensor_msgs
+
 from actionlib import SimpleActionClient, GoalStatus
 from control_msgs.msg import FollowJointTrajectoryGoal, FollowJointTrajectoryAction
 from diagnostic_msgs.msg import DiagnosticArray
@@ -12,6 +14,7 @@ from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 from tue_manipulation.msg import GraspPrecomputeGoal, GraspPrecomputeAction
 from tue_manipulation.msg import GripperCommandGoal, GripperCommandAction
 from tue_msgs.msg import GripperCommand
+
 
 
 class ArmState:
@@ -69,6 +72,11 @@ class Arm(object):
         # Init joint trajectory action server
         self._ac_joint_traj = SimpleActionClient(
             "/" + robot_name + "/" + self.side + "_arm/joint_trajectory_action", FollowJointTrajectoryAction)
+
+        # Listen to joint measurements
+        rospy.Subscriber("/" + robot_name + "/" + self.side + "_arm/measurements", sensor_msgs.msg.JointState,
+            self.cb_joint_measurements, queue_size = 1)
+        self._last_joint_measurement_msg = None
 
         # ToDo: don't hardcode?
         server_timeout = 0.25
@@ -133,6 +141,36 @@ class Arm(object):
                 self._operational = False
             else:
                 self._operational = True
+
+    def cb_joint_measurements(self, msg):
+        self._last_joint_measurement_msg = msg
+
+    def wait_for_joint_positions(self, min_positions, max_positions):        
+        while not rospy.is_shutdown():
+            if self._last_joint_measurement_msg:
+                msg = self._last_joint_measurement_msg
+
+                all_ok = True
+                for i in range(len(self.joint_names)):
+                    joint_name = self.joint_names[i]
+
+                    pos = msg.position[msg.name.index(joint_name)]
+                    if pos < min_positions[i] or pos > max_positions[i]:
+                        all_ok = False
+                        break
+
+                if  all_ok:
+                    return
+
+            rospy.sleep(0.1)
+
+    def _send_joint_goal(self, positions, tolerances):
+        min_positions = [p - (0.5 * t) for p, t in zip(positions, tolerances)]
+        max_positions = [p + (0.5 * t) for p, t in zip(positions, tolerances)]
+
+        self._ac_joint_traj.cancel_all_goals()
+        self._send_joint_trajectory([positions], timeout=rospy.Duration(0))
+        self.wait_for_joint_positions(min_positions, max_positions)
 
     def send_goal(self, px, py, pz, roll, pitch, yaw,
                   timeout=30,
@@ -351,11 +389,11 @@ class Arm(object):
 
         rospy.logdebug("Send {0} arm to jointcoords \n{1}".format(self.side, ps))
         self._ac_joint_traj.send_goal(goal)
-        if timeout != 0.0:
+        if timeout != rospy.Duration(0):
             done = self._ac_joint_traj.wait_for_result(timeout*len(joints_references))
             if not done:
                 rospy.logwarn("Cannot reach joint goal {0}".format(goal))
-        return done
+        return None
 
     def _publish_marker(self, goal, color, ns = ""):
         marker = visualization_msgs.msg.Marker()
