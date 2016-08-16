@@ -18,7 +18,6 @@ class Speech(BodyPart):
         Args:
             robot_name: string with robot name
             tf_listener: tf listener
-            wait_service:
             pre_hook:
             post_hook:
         """

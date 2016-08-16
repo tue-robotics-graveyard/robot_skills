@@ -1,23 +1,21 @@
 #! /usr/bin/env python
-import rospkg
+
 import threading
 
+# ROS
 import rospy
+import rospkg
+
 import swi_prolog.srv
+from .util.ros_connections import create_service_client
 
 
 class Reasoner(object):
     """Interface to the robot's reasoner.
     Converts __getattr__-calls into terms"""
-    def __init__(self, robot_name, wait_service=False):
+    def __init__(self, robot_name):
         self._lock = threading.RLock()
-        if wait_service:
-            rospy.loginfo("Waiting for /reasoner/query service")
-            rospy.wait_for_service("/"+robot_name+"/reasoner/query", timeout=2.0)
-            rospy.loginfo("service connected.")
-
-        self.sv_reasoner = rospy.ServiceProxy("/"+robot_name+"/reasoner/query", swi_prolog.srv.Query)
-
+        self.sv_reasoner = create_service_client("/"+robot_name+"/reasoner/query", swi_prolog.srv.Query)
 
     def close(self):
         pass
@@ -35,11 +33,11 @@ class Reasoner(object):
         return res
 
     def query_first_answer(self, term):
-        res=[]
+        res = []
         res_msg = self.sv_reasoner(term)
 
         for bindings_msg in res_msg.bindings:
-            #bindings[bindings_msg.variables[0]] = bindings_msg.values[0]
+            # bindings[bindings_msg.variables[0]] = bindings_msg.values[0]
             res = bindings_msg.values[0]
 
 #        res = res_msg.bindings.values[0]

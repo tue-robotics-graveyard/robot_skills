@@ -14,9 +14,6 @@ import ears
 import ebutton
 import lights
 
-# Perception
-import perception_ed
-
 # tf
 import tf_server
 

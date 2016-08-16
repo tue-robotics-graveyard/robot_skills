@@ -1,11 +1,9 @@
 #!/usr/bin/python
 
-"""Contstruct complicated ROS messages as easy as possible"""
+# ROS
 import rospy
-
 import std_msgs.msg as std
 import geometry_msgs.msg as gm
-
 import tf
 
 number = (int, long, float)
@@ -18,7 +16,7 @@ def Point(x=0, y=0, z=0):
     y: 2.2
     z: 3.3
     """
-    return gm.Point(x,y,z)
+    return gm.Point(x, y, z)
 
 
 def Header(frame_id="/map", stamp=None):
@@ -74,20 +72,20 @@ def Pose(x=0, y=0, z=0, phi=0, roll=0, pitch=0, yaw=0):
       w: 0.968912421711
     """
     if phi:
-      rospy.logerr("Please specify yaw instead of phi. Phi will be removed!!!")
+        rospy.logerr("Please specify yaw instead of phi. Phi will be removed!!!")
 
-    z_rotation = phi or yaw #Get the one that is not 0
+    z_rotation = phi or yaw  # Get the one that is not 0
 
     quat = Quaternion(roll=roll, pitch=pitch, yaw=z_rotation)
 
-    pos = Point(x ,y, z)
+    pos = Point(x, y, z)
 
     return gm.Pose(pos, quat)
 
 
 def PoseStamped(x=0, y=0, z=0, phi=0,
-    roll=0, pitch=0, yaw=0,
-    frame_id="/map", stamp=None, pointstamped=None):
+                roll=0, pitch=0, yaw=0,
+                frame_id="/map", stamp=None, pointstamped=None):
     """Build a geometry_msgs.msgs.PoseStamped from any number of arguments.
     Each value defaults to 0
     >>> ps = PoseStamped(yaw=0.5)

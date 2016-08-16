@@ -172,7 +172,8 @@ class Base(BodyPart):
         """
         super(Base, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
 
-        self._cmd_vel = rospy.Publisher('/' + self.robot_name + '/base/references', geometry_msgs.msg.Twist, queue_size=10)
+        self._cmd_vel = rospy.Publisher('/' + self.robot_name + '/base/references', geometry_msgs.msg.Twist,
+                                        queue_size=10)
         self._initial_pose_publisher = rospy.Publisher('/' + self.robot_name + '/initialpose',
                                                        geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=10)
 
@@ -234,7 +235,12 @@ class Base(BodyPart):
         initial_pose.pose.pose.position.y = y
         initial_pose.pose.pose.position.z = 0.0
         initial_pose.pose.pose.orientation = transformations.euler_z_to_quaternion(phi)
-        initial_pose.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        initial_pose.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.25, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.06853891945200942, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                        0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         # rospy.loginfo("initalpose = {0}".format(initial_pose))
 
@@ -263,7 +269,7 @@ def get_location(robot_name, tf_listener):
         orientation.w = ro_rot[3]
 
         target_pose = geometry_msgs.msg.PoseStamped(pose=geometry_msgs.msg.Pose(position=position,
-                                                                                 orientation=orientation))
+                                                                                orientation=orientation))
         target_pose.header.frame_id = "/map"
         target_pose.header.stamp = time
         return target_pose
@@ -271,7 +277,7 @@ def get_location(robot_name, tf_listener):
     except (tf.LookupException, tf.ConnectivityException):
         rospy.logerr("tf request failed!!!")
         target_pose = geometry_msgs.msg.PoseStamped(pose=geometry_msgs.msg.Pose(position=position,
-                                                                                 orientation=orientation))
+                                                                                orientation=orientation))
         target_pose.header.frame_id = "/map"
         return target_pose
 

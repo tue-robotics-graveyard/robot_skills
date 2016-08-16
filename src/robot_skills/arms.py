@@ -10,7 +10,6 @@ from diagnostic_msgs.msg import DiagnosticArray
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 # TU/e
-import tf_server
 from tue_manipulation_msgs.msg import GraspPrecomputeGoal, GraspPrecomputeAction
 from tue_manipulation_msgs.msg import GripperCommandGoal, GripperCommandAction
 from tue_msgs.msg import GripperCommand
@@ -93,7 +92,6 @@ class Arm(BodyPart):
 
         Returns: the loaded parameter
         """
-
         return rospy.get_param('/' + self.robot_name + '/' + param_name)
 
     def cancel_goals(self):
@@ -481,6 +479,7 @@ class Arm(BodyPart):
 
 
 if __name__ == "__main__":
+    import tf_server
     rospy.init_node('amigo_arms_executioner', anonymous=True)
     tf_listener = tf_server.TFClient()
 

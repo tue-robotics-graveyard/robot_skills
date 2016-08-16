@@ -40,7 +40,7 @@ class Navigation(object):
 
     def get_position_constraint(self, entity_id_area_name_map):
         try:
-            res = self._get_constraint_srv(entity_ids=[k for k in entity_id_area_name_map ],
+            res = self._get_constraint_srv(entity_ids=[k for k in entity_id_area_name_map],
                                            area_names=[v for k, v in entity_id_area_name_map.iteritems()])
         except Exception, e:
             rospy.logerr(e)
@@ -230,8 +230,7 @@ class ED(BodyPart):
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def update_entity(self, id, type = None, posestamped = None, flags = None, add_flags = [], remove_flags = [],
-                      action = None):
+    def update_entity(self, id, type=None, posestamped=None, flags=None, add_flags=[], remove_flags=[], action=None):
         """
         Updates entity
         :param id: entity id
@@ -350,7 +349,8 @@ class ED(BodyPart):
 
         # Sort by distance
         try:
-            entities = sorted(entities, key=lambda entity: hypot(center_point.x - entity.pose.position.x, center_point.y - entity.pose.position.y))
+            entities = sorted(entities, key=lambda entity: hypot(center_point.x - entity.pose.position.x,
+                                                                 center_point.y - entity.pose.position.y))
             print "entities sorted closest to robot = ", entities
         except:
             print "Failed to sort entities"
@@ -377,7 +377,7 @@ class ED(BodyPart):
         # Save the image (logging)
         self.save_image(path_suffix=area_description.replace(" ", "_"))
 
-        res = self._ed_kinect_update_srv(area_description = area_description, background_padding = background_padding)
+        res = self._ed_kinect_update_srv(area_description=area_description, background_padding=background_padding)
         if res.error_msg:
             rospy.logerr("Could not segment objects: %s" % res.error_msg)
 
@@ -386,7 +386,7 @@ class ED(BodyPart):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     @staticmethod
-    def get_perception_model_path(perception_model_name = ""):
+    def get_perception_model_path(perception_model_name=""):
 
         rospack = rospkg.RosPack()
 
@@ -442,7 +442,7 @@ class ED(BodyPart):
                 posteriors = []
                 for id in ids:
                     exvalue = random.choice(extypes)
-                    distr = { exvalue : 0.7, random.choice(extypes) : 0.2, random.choice(extypes) : 0.1 }
+                    distr = {exvalue: 0.7, random.choice(extypes): 0.2, random.choice(extypes): 0.1}
 
                     exvalues.append(exvalue)
                     exprobs.append(random.random())
@@ -462,7 +462,7 @@ class ED(BodyPart):
 
     def classify_with_probs(self, ids, types):
         rospy.logwarn("Is classify_with_probs function deprecated?")  # ToDo: @Luis: is this true?
-        res = self._ed_classify_srv(ids = ids, types = types)
+        res = self._ed_classify_srv(ids=ids, types=types)
         return zip(res.types, res.probabilities)
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -518,7 +518,7 @@ class ED(BodyPart):
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def save_image(self, path="", path_suffix = "", filename = ""):
+    def save_image(self, path="", path_suffix="", filename=""):
         import os
         import time
 

@@ -22,7 +22,6 @@ class Torso(BodyPart):
         Args:
             robot_name: string with robot name
             tf_listener: tf listener
-            wait_service:
         """
         super(Torso, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
         self.joint_names = rospy.get_param('/'+self.robot_name+'/skills/torso/joint_names')

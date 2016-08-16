@@ -2,10 +2,7 @@
 import rospy
 
 # TU/e
-from dragonfly_speech_recognition.msg import Choice
-from dragonfly_speech_recognition.srv import GetSpeech, GetSpeechRequest
 from body_part import BodyPart
-from .util.ros_connections import create_service_client
 
 
 class Ears(BodyPart):

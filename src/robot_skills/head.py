@@ -36,12 +36,8 @@ class Head(BodyPart):
         """
         Reset head position
         """
-        reset_goal = PointStamped()
-        reset_goal.header.stamp = rospy.Time.now()
-        reset_goal.header.frame_id = "/"+self.robot_name+"/base_link"
-        reset_goal.point.x = 10
-        reset_goal.point.y = 0.0
-        reset_goal.point.z = 0.0
+        reset_goal = msgs.PointStamped(x=10.0, y=0.0, z=0.0,
+                                       frame_id="/" + self.robot_name + "/base_link", stamp=rospy.Time.now())
 
         return self.look_at_point(reset_goal, timeout=timeout)
 
@@ -51,20 +47,16 @@ class Head(BodyPart):
         Optionally, keep tracking can be disabled (keep_tracking=False)
         """
         if side == "left":
-            return self.look_at_point(msgs.PointStamped(0,0,0,frame_id="/"+self.robot_name+"/grippoint_left"))
+            return self.look_at_point(msgs.PointStamped(0, 0, 0, frame_id="/"+self.robot_name+"/grippoint_left"))
         elif side == "right":
-            return self.look_at_point(msgs.PointStamped(0,0,0,frame_id="/"+self.robot_name+"/grippoint_right"))
+            return self.look_at_point(msgs.PointStamped(0, 0, 0, frame_id="/"+self.robot_name+"/grippoint_right"))
         else:
             rospy.logerr("No side specified for look_at_hand. Give me 'left' or 'right'")
             return False
 
     def look_at_ground_in_front_of_robot(self, distance=2):
-        goal = PointStamped()
-        goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self.robot_name+"/base_link"
-        goal.point.x = distance
-        goal.point.y = 0.0
-        goal.point.z = 0.0
+        goal = msgs.PointStamped(x=distance, y=0.0, z=0.0,
+                                 frame_id="/" + self.robot_name + "/base_link", stamp=rospy.Time.now())
 
         return self.look_at_point(goal)
 
@@ -72,12 +64,8 @@ class Head(BodyPart):
         """
         Gives a target at z = 1.0 at 1 m in front of the robot
         """
-        goal = PointStamped()
-        goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self.robot_name+"/base_link"
-        goal.point.x = 1.0
-        goal.point.y = 0.0
-        goal.point.z = 0.5
+        goal = msgs.PointStamped(x=1.0, y=0.0, z=0.5,
+                                 frame_id="/" + self.robot_name + "/base_link", stamp=rospy.Time.now())
 
         return self.look_at_point(goal)
 
@@ -85,12 +73,8 @@ class Head(BodyPart):
         """
         Gives a target at z = 1.0 at 1 m in front of the robot
         """
-        goal = PointStamped()
-        goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self.robot_name+"/base_link"
-        goal.point.x = 0.2
-        goal.point.y = 0.0
-        goal.point.z = 4.5
+        goal = msgs.PointStamped(x=0.2, y=0.0, z=4.5,
+                                 frame_id="/" + self.robot_name + "/base_link", stamp=rospy.Time.now())
 
         return self.look_at_point(goal)
 
@@ -98,12 +82,8 @@ class Head(BodyPart):
         """
         Gives a target at z = 1.75 at 1 m in front of the robot
         """
-        goal = PointStamped()
-        goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self.robot_name+"/base_link"
-        goal.point.x = 1.0
-        goal.point.y = 0.0
-        goal.point.z = 1.6
+        goal = msgs.PointStamped(x=1.0, y=0.0, z=1.6,
+                                 frame_id="/" + self.robot_name + "/base_link", stamp=rospy.Time.now())
 
         return self.look_at_point(goal)
 
@@ -157,22 +137,6 @@ class Head(BodyPart):
     def __doneCallback(self, terminal_state, result):
         self._goal = None
         self._at_setpoint = False
-
-
-
-#######################################
-    # # WORKS ONLY WITH amiddle-open (for open challenge rwc2015)
-    # def take_snapshot(self, distance=10, timeout = 1.0):
-
-    #     self.look_at_ground_in_front_of_robot(distance)
-    #     rospy.sleep(timeout)
-    #     rospy.loginfo("Taking snapshot")
-    #     res = self.snapshot_srv()
-
-    #     return res
-
-#######################################
-
 
 
 if __name__ == "__main__":

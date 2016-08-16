@@ -3,7 +3,7 @@ import rospy
 from std_msgs.msg import Bool
 
 
-class EButton:
+class EButton(object):
     """
     Interface to amigo emergency switch. Listens to /emergency_switch topic
     """
