@@ -11,9 +11,11 @@ import geometry_msgs.msg
 import rospy
 import tf
 from actionlib import SimpleActionClient
+
+# TU/e
 from cb_planner_msgs_srvs.msg import LocalPlannerAction, OrientationConstraint, PositionConstraint, LocalPlannerGoal
 from cb_planner_msgs_srvs.srv import GetPlan, CheckPlan
-
+from body_part import BodyPart
 from .util import nav_analyzer
 from .util import transformations
 
@@ -147,20 +149,31 @@ class GlobalPlanner():
                 distance += math.sqrt( dx*dx + dy*dy)
         return distance
 
-###########################################################################################################################
+#######################################################################################################################
 
-class Base(object):
+
+class Base(BodyPart):
+    """ Interface to the driving platform of the robots
+    """
     def __init__(self, robot_name, tf_listener, wait_service=True, use_2d=None):
-        self._tf_listener = tf_listener
-        self._robot_name = robot_name
-        self._cmd_vel = rospy.Publisher('/' + self._robot_name + '/base/references', geometry_msgs.msg.Twist, queue_size=10)
-        self._initial_pose_publisher = rospy.Publisher('/' + self._robot_name + '/initialpose', geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=10)
+        """ Constructor
 
-        self.analyzer = nav_analyzer.NavAnalyzer(self._robot_name)
+        Args:
+            robot_name: string with robot name
+            tf_listener: tf listener
+            wait_service:
+            use_2d:
+        """
+        super(Base, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
+
+        self._cmd_vel = rospy.Publisher('/' + self.robot_name + '/base/references', geometry_msgs.msg.Twist, queue_size=10)
+        self._initial_pose_publisher = rospy.Publisher('/' + self.robot_name + '/initialpose', geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=10)
+
+        self.analyzer = nav_analyzer.NavAnalyzer(self.robot_name)
 
         # The plannners
-        self.global_planner = GlobalPlanner(self._robot_name, self._tf_listener, self.analyzer)
-        self.local_planner = LocalPlanner(self._robot_name, self._tf_listener, self.analyzer)
+        self.global_planner = GlobalPlanner(self.robot_name, self.tf_listener, self.analyzer)
+        self.local_planner = LocalPlanner(self.robot_name, self.tf_listener, self.analyzer)
 
     def move(self, position_constraint_string, frame):
         p = PositionConstraint()
@@ -202,7 +215,7 @@ class Base(object):
         """ Returns a PoseStamped with the robot pose
         :return: PoseStamped with robot pose
         """
-        return get_location(self._robot_name, self._tf_listener)
+        return get_location(self.robot_name, self.tf_listener)
 
     def set_initial_pose(self, x, y, phi):
 

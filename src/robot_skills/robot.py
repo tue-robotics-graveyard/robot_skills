@@ -41,19 +41,20 @@ class Robot(object):
 
         # Body parts
         self.base = base.Base(self.robot_name, self.tf_listener, wait_service=wait_services)
-        self.torso = torso.Torso(self.robot_name,wait_service=wait_services)
+        self.torso = torso.Torso(self.robot_name, self.tf_listener, wait_service=wait_services)
         self.spindle = self.torso
         self.leftArm = arms.Arm(self.robot_name, "left", self.tf_listener)
         self.rightArm = arms.Arm(self.robot_name, "right", self.tf_listener)
         self.arms = OrderedDict(left=self.leftArm, right=self.rightArm)
 
-        self.head = head.Head(self.robot_name)
+        self.head = head.Head(self.robot_name, self.tf_listener)
 
         # Human Robot Interaction
         self.lights = lights.Lights(self.robot_name)
-        self.speech = speech.Speech(self.robot_name, wait_services, lambda: self.lights.set_color(1,0,0), lambda: self.lights.set_color(0,0,1))
+        self.speech = speech.Speech(self.robot_name, self.tf_listener, wait_services, lambda: self.lights.set_color(1,0,0), lambda: self.lights.set_color(0,0,1))
         self.hmi = Api("/" + self.robot_name + '/hmi')
-        self.ears = ears.Ears(self.robot_name, lambda: self.lights.set_color(0,1,0), lambda: self.lights.set_color(0,0,1))
+        self.ears = ears.Ears(self.robot_name, self.tf_listener,
+                              lambda: self.lights.set_color(0,1,0), lambda: self.lights.set_color(0,0,1))
         self.ears._hmi = self.hmi # TODO: when ears is gone, remove this line
         self.ebutton = ebutton.EButton()
 

@@ -2,14 +2,24 @@
 import rospy
 from actionlib import SimpleActionClient
 from geometry_msgs.msg import PointStamped
-from head_ref.msg import HeadReferenceAction, HeadReferenceGoal
 
+# TU/e
+from head_ref.msg import HeadReferenceAction, HeadReferenceGoal
+from body_part import BodyPart
 from .util import msg_constructors as msgs
 
 
-class Head():
-    def __init__(self, robot_name):
-        self._robot_name = robot_name
+class Head(BodyPart):
+    """ Interface to the neck of the robot to point the head with camera and microphone to the right direction.
+    """
+    def __init__(self, robot_name, tf_listener):
+        """ Constructor
+
+        Args:
+            robot_name: string with robot name
+            tf_listener: tf listener
+        """
+        super(Head, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
         self._ac_head_ref_action = SimpleActionClient("/"+robot_name+"/head_ref/action_server",  HeadReferenceAction)
         self._goal = None
         self._at_setpoint = False
@@ -25,7 +35,7 @@ class Head():
         """
         reset_goal = PointStamped()
         reset_goal.header.stamp = rospy.Time.now()
-        reset_goal.header.frame_id = "/"+self._robot_name+"/base_link"
+        reset_goal.header.frame_id = "/"+self.robot_name+"/base_link"
         reset_goal.point.x = 10
         reset_goal.point.y = 0.0
         reset_goal.point.z = 0.0
@@ -38,9 +48,9 @@ class Head():
         Optionally, keep tracking can be disabled (keep_tracking=False)
         """
         if side == "left":
-            return self.look_at_point(msgs.PointStamped(0,0,0,frame_id="/"+self._robot_name+"/grippoint_left"))
+            return self.look_at_point(msgs.PointStamped(0,0,0,frame_id="/"+self.robot_name+"/grippoint_left"))
         elif side == "right":
-            return self.look_at_point(msgs.PointStamped(0,0,0,frame_id="/"+self._robot_name+"/grippoint_right"))
+            return self.look_at_point(msgs.PointStamped(0,0,0,frame_id="/"+self.robot_name+"/grippoint_right"))
         else:
             rospy.logerr("No side specified for look_at_hand. Give me 'left' or 'right'")
             return False
@@ -48,7 +58,7 @@ class Head():
     def look_at_ground_in_front_of_robot(self, distance=2):
         goal = PointStamped()
         goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self._robot_name+"/base_link"
+        goal.header.frame_id = "/"+self.robot_name+"/base_link"
         goal.point.x = distance
         goal.point.y = 0.0
         goal.point.z = 0.0
@@ -61,7 +71,7 @@ class Head():
         """
         goal = PointStamped()
         goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self._robot_name+"/base_link"
+        goal.header.frame_id = "/"+self.robot_name+"/base_link"
         goal.point.x = 1.0
         goal.point.y = 0.0
         goal.point.z = 0.5
@@ -74,7 +84,7 @@ class Head():
         """
         goal = PointStamped()
         goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self._robot_name+"/base_link"
+        goal.header.frame_id = "/"+self.robot_name+"/base_link"
         goal.point.x = 0.2
         goal.point.y = 0.0
         goal.point.z = 4.5
@@ -87,7 +97,7 @@ class Head():
         """
         goal = PointStamped()
         goal.header.stamp = rospy.Time.now()
-        goal.header.frame_id = "/"+self._robot_name+"/base_link"
+        goal.header.frame_id = "/"+self.robot_name+"/base_link"
         goal.point.x = 1.0
         goal.point.y = 0.0
         goal.point.z = 1.6

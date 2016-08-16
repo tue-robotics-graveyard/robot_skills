@@ -24,11 +24,18 @@ import os
 
 import yaml
 
+from body_part import BodyPart
 from .classification_result import ClassificationResult
 
 
-class Navigation:
-    def __init__(self, robot_name, tf_listener, wait_service=False):
+class Navigation(object):
+    """ Interface to ED navigation plugin """
+    def __init__(self, robot_name):
+        """ Constructor
+
+        Args:
+            robot_name: string with robot name
+        """
         self._get_constraint_srv = rospy.ServiceProxy('/%s/ed/navigation/get_constraint'%robot_name, GetGoalConstraint)
 
     def get_position_constraint(self, entity_id_area_name_map):
@@ -44,9 +51,20 @@ class Navigation:
 
         return PositionConstraint(constraint=res.position_constraint_map_frame, frame="/map")
 
-class ED:
+
+class ED(BodyPart):
+    """ Interface to the Environment Descriptor world model
+    """
 
     def __init__(self, robot_name, tf_listener, wait_service=False):
+        """ Constructor
+
+        Args:
+            robot_name: string with robot name
+            tf_listener: tf listener
+            wait_service:
+        """
+        super(ED, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
         self._ed_simple_query_srv = rospy.ServiceProxy('/%s/ed/simple_query'%robot_name, SimpleQuery)
         self._ed_entity_info_query_srv = rospy.ServiceProxy('/%s/ed/gui/get_entity_info'%robot_name, GetEntityInfo)
         self._ed_update_srv = rospy.ServiceProxy('/%s/ed/update'%robot_name, UpdateSrv)
@@ -68,9 +86,7 @@ class ED:
         self._clear_persons_srv = rospy.ServiceProxy('/%s/clear_persons' % robot_name, Empty)
         self._recognize_person_srv = rospy.ServiceProxy('/%s/recognize_person'%robot_name, ed_perception.srv.RecognizePerson)
 
-        self._tf_listener = tf_listener
-
-        self.navigation = Navigation(robot_name, tf_listener, wait_service)
+        self.navigation = Navigation(robot_name)
 
         self._marker_publisher = rospy.Publisher("/" + robot_name + "/ed/simple_query",  visualization_msgs.msg.Marker, queue_size=10)
 
@@ -528,7 +544,7 @@ class ED:
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def _transform_center_point_to_map(self, pointstamped):
-        point_in_map = transformations.tf_transform(pointstamped.point, pointstamped.header.frame_id, "/map", self._tf_listener)
+        point_in_map = transformations.tf_transform(pointstamped.point, pointstamped.header.frame_id, "/map", self.tf_listener)
         return point_in_map
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

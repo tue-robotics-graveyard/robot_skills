@@ -8,10 +8,12 @@ from actionlib import SimpleActionClient, GoalStatus
 from control_msgs.msg import FollowJointTrajectoryGoal, FollowJointTrajectoryAction
 from diagnostic_msgs.msg import DiagnosticArray
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+
+# TU/e
 from tue_manipulation_msgs.msg import GraspPrecomputeGoal, GraspPrecomputeAction
 from tue_manipulation_msgs.msg import GripperCommandGoal, GripperCommandAction
 from tue_msgs.msg import GripperCommand
-
+from body_part import BodyPart
 
 class ArmState:
     """Specifies a State either OPEN or CLOSE"""
@@ -19,7 +21,7 @@ class ArmState:
     CLOSE = "close"
 
 
-class Arm(object):
+class Arm(BodyPart):
     """
     A single arm can be either left or right, extends Arms:
     Use left or right to get arm while running from the python console
@@ -33,13 +35,13 @@ class Arm(object):
     >>> left.send_gripper_goal_open(10)
     """
     def __init__(self, robot_name, side, tf_listener):
-        self.robot_name = robot_name
+        super(Arm, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
+
         self.side = side
         if (self.side is "left") or (self.side is "right"):
             pass
         else:
             raise Exception("Side should be either: left or right")
-        self.tf_listener = tf_listener
 
         self._occupied_by = None
         self._operational = True  # In simulation, there will be no hardware cb

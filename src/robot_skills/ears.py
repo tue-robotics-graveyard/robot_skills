@@ -1,10 +1,13 @@
 #! /usr/bin/env python
 import rospy
+
+# TU/e
 from dragonfly_speech_recognition.msg import Choice
 from dragonfly_speech_recognition.srv import GetSpeech, GetSpeechRequest
+from body_part import BodyPart
 
 
-class Ears:
+class Ears(BodyPart):
     """
     Interface to amigo Ears.
     Works with dragonfly speech recognition (as of december 2014)
@@ -12,7 +15,15 @@ class Ears:
     Function listen explained on wiki: http://servicerobot.cstwiki.wtb.tue.nl/index.php?title=Using_the_dragonfly_speech_recognition
     """
 
-    def __init__(self, robot_name, pre_hook=None, post_hook=None):
+    def __init__(self, robot_name, tf_listener, pre_hook=None, post_hook=None):
+        """ Constructor
+
+        Args:
+            robot_name: string with robot name
+            tf_listener: tf object
+            pre_hook:
+            post_hook:
+        """
         self._get_speech_client_service = rospy.ServiceProxy("/%s/speech_client/get_speech"%robot_name, GetSpeech)
         self._pre_hook = pre_hook
         self._post_hook = post_hook
