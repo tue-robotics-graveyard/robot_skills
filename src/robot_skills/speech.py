@@ -2,6 +2,7 @@
 import rospy
 from text_to_speech.srv import Speak, SpeakRequest
 from body_part import BodyPart
+from .util.ros_connections import create_service_client
 
 
 class Speech(BodyPart):
@@ -18,27 +19,25 @@ class Speech(BodyPart):
             post_hook:
         """
         super(Speech, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
-        if wait_service:
-            rospy.loginfo("Waiting for service /%s/text_to_speech/speak"%robot_name)
-            rospy.wait_for_service('/%s/text_to_speech/speak'%robot_name, timeout=2)
-        self._speech_service = rospy.ServiceProxy('/%s/text_to_speech/speak'%robot_name, Speak)
+        self._speech_service = create_service_client('/%s/text_to_speech/speak' % robot_name, Speak)
         self._pre_hook = pre_hook
         self._post_hook = post_hook
 
-        self._default_language  = rospy.get_param(robot_name+"/text_to_speech/language", 'us')
-        self._default_voice     = rospy.get_param(robot_name+"/text_to_speech/voice", 'kyle')
+        self._default_language = rospy.get_param(robot_name+"/text_to_speech/language", 'us')
+        self._default_voice = rospy.get_param(robot_name+"/text_to_speech/voice", 'kyle')
         self._default_character = rospy.get_param(robot_name+"/text_to_speech/character", 'default')
-        self._default_emotion   = rospy.get_param(robot_name+"/text_to_speech/emotion", 'neutral')
+        self._default_emotion = rospy.get_param(robot_name+"/text_to_speech/emotion", 'neutral')
 
     def close(self):
         pass
 
-    def speak(self, sentence, language=None, personality=None, voice=None, mood=None, block=True, replace={"_":" "}):
+    def speak(self, sentence, language=None, personality=None, voice=None, mood=None, block=True, replace={"_": " "}):
         """
         Send a sentence to the text to speech module.
         You can set language, personality, voice and mood for the Phiips TTS.
         When block=False, this method returns immediatly.
-        With the replace-dictionary, you can specify which characters to replace with what. By default, it replace underscores with spaces.
+        With the replace-dictionary, you can specify which characters to replace with what. By default, it replace
+        underscores with spaces.
         """
 
         if not language:
@@ -56,18 +55,18 @@ class Speech(BodyPart):
         for orig, replacement in replace.iteritems():
             sentence = sentence.replace(orig, replacement)
 
-        result = False
         try:
             if language == 'nl' and not (personality in ['david', 'marjolein']):
                 personality = 'david' #kyle doesn't work for NL
-            rospy.loginfo("\x1b[1;32m'"+ sentence + "'\x1b[0m") #The funny stuff around sentence is for coloring the output text in the console
+            # The funny stuff around sentence is for coloring the output text in the console
+            rospy.loginfo("\x1b[1;32m'"+ sentence + "'\x1b[0m")
 
             req = SpeakRequest()
-            req.language      = language
-            req.voice         = voice
-            req.character     = personality
-            req.emotion       = mood
-            req.sentence      = sentence
+            req.language = language
+            req.voice = voice
+            req.character = personality
+            req.emotion = mood
+            req.sentence = sentence
             req.blocking_call = block
             resp1 = self._speech_service(req)
             result = resp1.error_msg == ""

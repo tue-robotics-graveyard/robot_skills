@@ -18,31 +18,37 @@ from cb_planner_msgs_srvs.srv import GetPlan, CheckPlan
 from body_part import BodyPart
 from .util import nav_analyzer
 from .util import transformations
+from .util.ros_connections import create_simple_action_client, create_service_client
 
 
-###########################################################################################################################
+########################################################################################################################
 
-class LocalPlanner():
+
+class LocalPlanner(object):
     def __init__(self, robot_name, tf_listener, analyzer):
         self.analyzer = analyzer
         self._robot_name = robot_name
         self._tf_listener = tf_listener
-        self._action_client = SimpleActionClient('/'+ robot_name +'/local_planner/action_server', LocalPlannerAction)
+        self._action_client = create_simple_action_client('/' + robot_name + '/local_planner/action_server',
+                                                          LocalPlannerAction)
 
         # Public members!
-        self._status = "idle" # idle, controlling, blocked, arrived
+        self._status = "idle"  # idle, controlling, blocked, arrived
         self._obstacle_point = None
         self._dtg = None
         self._plan = None
         self._goal_handle = None
+
+        # Private
+        self._orientation_constraint = None
 
     def setPlan(self, plan, position_constraint, orientation_constraint):
         goal = LocalPlannerGoal()
         goal.plan = plan
         goal.orientation_constraint = orientation_constraint
         self._orientation_constraint = orientation_constraint
-        #self.analyzer.count_plan(plan[0], plan[-1], 0.0, computePathLength(plan))
-        self._action_client.send_goal(goal, done_cb = self.__doneCallback, feedback_cb = self.__feedbackCallback)
+        # self.analyzer.count_plan(plan[0], plan[-1], 0.0, computePathLength(plan))
+        self._action_client.send_goal(goal, done_cb=self.__doneCallback, feedback_cb=self.__feedbackCallback)
         self._goal_handle = self._action_client.gh
         rospy.loginfo("Goal handle = {0}".format(self._goal_handle))
         self.__setState("controlling", None, None, plan)
@@ -50,7 +56,7 @@ class LocalPlanner():
     def cancelCurrentPlan(self):
         state = self._action_client.get_state()
         # Only cancel goal when pending or active
-        if state ==0 or state == 1:
+        if state == 0 or state == 1:
             self._action_client.cancel_goal()
             self.__setState("idle")
 
@@ -65,9 +71,6 @@ class LocalPlanner():
 
     def getObstaclePoint(self):
         return self._obstacle_point
-
-    def getPlan(self):
-        return plan
 
     def getCurrentOrientationConstraint(self):
         return self._orientation_constraint
@@ -87,16 +90,19 @@ class LocalPlanner():
         self._dtg = dtg
         self._plan = plan
 
-###########################################################################################################################
+########################################################################################################################
 
-class GlobalPlanner():
+
+class GlobalPlanner(object):
     def __init__(self, robot_name, tf_listener, analyzer):
         self.analyzer = analyzer
         self._robot_name = robot_name
         self._tf_listener = tf_listener
-        self._get_plan_client = rospy.ServiceProxy("/" + robot_name + "/global_planner/get_plan_srv", GetPlan)
-        self._check_plan_client = rospy.ServiceProxy("/" + robot_name +"/global_planner/check_plan_srv", CheckPlan)
-        rospy.loginfo("Waiting for the global planner services ...")
+        self._get_plan_client = create_service_client("/" + robot_name + "/global_planner/get_plan_srv", GetPlan)
+        self._check_plan_client = create_service_client("/" + robot_name + "/global_planner/check_plan_srv", CheckPlan)
+
+        # Attributes
+        self.position_constraint = None
 
     def getPlan(self, position_constraint):
 
@@ -114,15 +120,15 @@ class GlobalPlanner():
             return None
 
         if not resp.succes:
-            rospy.logerr("Global planner couldn't plan a path to the specified constraints. Are the constraints you specified valid?")
+            rospy.logerr("Global planner couldn't plan a path to the specified constraints. "
+                         "Are the constraints you specified valid?")
             return None
 
-        end_time = rospy.Time.now()
-        plan_time = (end_time-start_time).to_sec()
-
-        path_length = self.computePathLength(resp.plan)
-
-        #if path_length > 0:
+        # Analyzer
+        # end_time = rospy.Time.now()
+        # plan_time = (end_time-start_time).to_sec()
+        # path_length = self.computePathLength(resp.plan)
+        # if path_length > 0:
         #    self.analyzer.count_plan(resp.plan[0], resp.plan[-1], plan_time, path_length)
 
         return resp.plan
@@ -140,7 +146,7 @@ class GlobalPlanner():
         return self.position_constraint
 
     def computePathLength(self, path):
-        #rospy.logwarn("Please use the other computepathlength")
+        # rospy.logwarn("Please use the other computepathlength")
         distance = 0.0
         for index, pose in enumerate(path):
             if not index == 0:
@@ -167,7 +173,8 @@ class Base(BodyPart):
         super(Base, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
 
         self._cmd_vel = rospy.Publisher('/' + self.robot_name + '/base/references', geometry_msgs.msg.Twist, queue_size=10)
-        self._initial_pose_publisher = rospy.Publisher('/' + self.robot_name + '/initialpose', geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=10)
+        self._initial_pose_publisher = rospy.Publisher('/' + self.robot_name + '/initialpose',
+                                                       geometry_msgs.msg.PoseWithCovarianceStamped, queue_size=10)
 
         self.analyzer = nav_analyzer.NavAnalyzer(self.robot_name)
 
@@ -198,7 +205,7 @@ class Base(BodyPart):
         # Drive
         v.linear.x = vx
         v.linear.y = vy
-        v.angular.z= vth
+        v.angular.z = vth
         while (rospy.Time.now() - t_start) < rospy.Duration(timeout):
             self._cmd_vel.publish(v)
             rospy.sleep(0.1)
@@ -206,7 +213,7 @@ class Base(BodyPart):
         # Stop driving
         v.linear.x = 0.0
         v.linear.y = 0.0
-        v.angular.z= 0.0
+        v.angular.z = 0.0
         self._cmd_vel.publish(v)
 
         return True
@@ -229,32 +236,14 @@ class Base(BodyPart):
         initial_pose.pose.pose.orientation = transformations.euler_z_to_quaternion(phi)
         initial_pose.pose.covariance = [0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.06853891945200942, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
-        #rospy.loginfo("initalpose = {0}".format(initial_pose))
+        # rospy.loginfo("initalpose = {0}".format(initial_pose))
 
         self._initial_pose_publisher.publish(initial_pose)
 
         return True
 
-    ########################################################
-    ###### Are the following functions deprecated ??? ######
-    ########################################################
-    def go(self, x, y, phi, frame="/map", timeout=0):
-        rospy.logwarn("[constraint_based_base.py] Function 'go' is obsolete.")
-        return True
+########################################################################################################################
 
-    def reset_costmap(self):
-        rospy.logwarn("[constraint_based_base.py] Function 'reset_costmap' is obsolete.")
-        return True
-
-    def cancel_goal(self):
-        rospy.logwarn("[constraint_based_base.py] Function 'cancel_goal' is obsolete.")
-        return True
-
-    ########################################################
-    ########################################################
-    ########################################################
-
-###########################################################################################################################
 
 def get_location(robot_name, tf_listener):
 
@@ -273,16 +262,19 @@ def get_location(robot_name, tf_listener):
         orientation.z = ro_rot[2]
         orientation.w = ro_rot[3]
 
-        target_pose =  geometry_msgs.msg.PoseStamped(pose=geometry_msgs.msg.Pose(position=position, orientation=orientation))
+        target_pose = geometry_msgs.msg.PoseStamped(pose=geometry_msgs.msg.Pose(position=position,
+                                                                                 orientation=orientation))
         target_pose.header.frame_id = "/map"
         target_pose.header.stamp = time
         return target_pose
 
     except (tf.LookupException, tf.ConnectivityException):
         rospy.logerr("tf request failed!!!")
-        target_pose =  geometry_msgs.msg.PoseStamped(pose=geometry_msgs.msg.Pose(position=position, orientation=orientation))
+        target_pose = geometry_msgs.msg.PoseStamped(pose=geometry_msgs.msg.Pose(position=position,
+                                                                                 orientation=orientation))
         target_pose.header.frame_id = "/map"
         return target_pose
+
 
 def computePathLength(path):
     distance = 0.0

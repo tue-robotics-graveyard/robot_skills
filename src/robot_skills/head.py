@@ -7,6 +7,7 @@ from geometry_msgs.msg import PointStamped
 from head_ref.msg import HeadReferenceAction, HeadReferenceGoal
 from body_part import BodyPart
 from .util import msg_constructors as msgs
+from .util.ros_connections import create_simple_action_client
 
 
 class Head(BodyPart):
@@ -20,7 +21,8 @@ class Head(BodyPart):
             tf_listener: tf listener
         """
         super(Head, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
-        self._ac_head_ref_action = SimpleActionClient("/"+robot_name+"/head_ref/action_server",  HeadReferenceAction)
+        self._ac_head_ref_action = create_simple_action_client("/" + robot_name + "/head_ref/action_server",
+                                                               HeadReferenceAction)
         self._goal = None
         self._at_setpoint = False
 

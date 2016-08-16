@@ -11,6 +11,7 @@ from sensor_msgs.msg import JointState
 # TU/e
 from body_part import BodyPart
 from .util import concurrent_util
+from .util.ros_connections import create_simple_action_client
 
 
 class Torso(BodyPart):
@@ -31,11 +32,12 @@ class Torso(BodyPart):
         self.upper_limit = self.default_configurations['upper_limit']
 
         # Init action client
-        #self.ac_move_torso = actionlib.SimpleActionClient('/'+self.robot_name+'/torso_server', control_msgs.msg.FollowJointTrajectoryAction)
-        self.ac_move_torso = actionlib.SimpleActionClient('/'+self.robot_name+'/body/joint_trajectory_action', control_msgs.msg.FollowJointTrajectoryAction)
+        self.ac_move_torso = create_simple_action_client('/'+self.robot_name+'/body/joint_trajectory_action',
+                                                         control_msgs.msg.FollowJointTrajectoryAction)
 
         # Init joint measurement subscriber
-        self.torso_sub = rospy.Subscriber('/'+self.robot_name+'/sergio/torso/measurements', JointState, self._receive_torso_measurement)
+        self.torso_sub = rospy.Subscriber('/'+self.robot_name+'/sergio/torso/measurements', JointState,
+                                          self._receive_torso_measurement)
 
     def close(self):
         rospy.loginfo("Torso cancelling all goals on close")
@@ -52,13 +54,16 @@ class Torso(BodyPart):
         rospy.logdebug("Send torso goal {0}, timeout = {1}".format(torso_pos, timeout))
 
         if len(torso_pos) != len(self.joint_names):
-            rospy.logwarn('Length of desired torso pos {0} does not correspond with number of joints {1}'.format(len(torso_pos), len(self.joint_names)))
+            rospy.logwarn('Length of desired torso pos {0} does not correspond with number of joints '
+                          '{1}'.format(len(torso_pos), len(self.joint_names)))
             return False
 
         ''' Check limits '''
         for i in range(0, len(self.joint_names)):
             if torso_pos[i] < self.lower_limit[i] or torso_pos[i] > self.upper_limit:
-                rospy.logwarn("Desired position {0} for joint {1} exceeds limits [{2}, {3}]".format(torso_pos[i], self.joint_names[i], self.lower_limit[i], self.upper_limit[i]))
+                rospy.logwarn("Desired position {0} for joint {1} "
+                              "exceeds limits [{2}, {3}]".format(torso_pos[i], self.joint_names[i],
+                                                                 self.lower_limit[i], self.upper_limit[i]))
                 return False
 
         torso_goal = control_msgs.msg.FollowJointTrajectoryGoal()
@@ -78,13 +83,14 @@ class Torso(BodyPart):
 
         rospy.logdebug("Sending torso_goal: {0}".format(torso_goal))
 
-        import time; time.sleep(0.001)  # This is necessary: the rtt_actionlib in the hardware seems
-                                        # to only have a queue size of 1 and runs at 1000 hz. This
-                                        # means that if two goals are send approximately at the same
-                                        # time (e.g. an arm goal and a torso goal), one of the two
-                                        # goals probably won't make it. This sleep makes sure the
-                                        # goals will always arrive in different update hooks in the
-                                        # hardware TrajectoryActionLib server.
+        # This is necessary: the rtt_actionlib in the hardware seems
+        # to only have a queue size of 1 and runs at 1000 hz. This
+        # means that if two goals are send approximately at the same
+        # time (e.g. an arm goal and a torso goal), one of the two
+        # goals probably won't make it. This sleep makes sure the
+        # goals will always arrive in different update hooks in the
+        # hardware TrajectoryActionLib server.
+        rospy.sleep(rospy.Duration(0.001))
 
         self.ac_move_torso.send_goal(torso_goal)
 
@@ -111,7 +117,6 @@ class Torso(BodyPart):
 
     def cancel_goal(self):
         self.ac_move_torso.cancel_goal()
-        #return True
 
     def wait_for_motion_done(self, timeout=10):
         if self.ac_move_torso.gh:

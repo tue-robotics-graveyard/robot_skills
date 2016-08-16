@@ -1,5 +1,6 @@
 #! /usr/bin/env python
 import rospy
+import rospkg
 from ed.srv import SimpleQuery, SimpleQueryRequest, UpdateSrv, Configure
 # from ed_sensor_integration.srv import LockEntities, MeshEntityInView, Segment
 import ed_sensor_integration.srv
@@ -19,14 +20,11 @@ from std_srvs.srv import Empty
 import tf
 import visualization_msgs.msg
 
-import os
-
-
 import yaml
 
 from body_part import BodyPart
 from .classification_result import ClassificationResult
-
+from .util.ros_connections import create_simple_action_client, create_service_client
 
 class Navigation(object):
     """ Interface to ED navigation plugin """
@@ -36,11 +34,13 @@ class Navigation(object):
         Args:
             robot_name: string with robot name
         """
-        self._get_constraint_srv = rospy.ServiceProxy('/%s/ed/navigation/get_constraint'%robot_name, GetGoalConstraint)
+        self._get_constraint_srv = create_service_client('/%s/ed/navigation/get_constraint' % robot_name,
+                                                         GetGoalConstraint)
 
     def get_position_constraint(self, entity_id_area_name_map):
         try:
-            res = self._get_constraint_srv(entity_ids=[ k for k in entity_id_area_name_map ], area_names=[ v for k,v in entity_id_area_name_map.iteritems() ])
+            res = self._get_constraint_srv(entity_ids=[k for k in entity_id_area_name_map ],
+                                           area_names=[v for k, v in entity_id_area_name_map.iteritems()])
         except Exception, e:
             rospy.logerr(e)
             return None
@@ -65,30 +65,36 @@ class ED(BodyPart):
             wait_service:
         """
         super(ED, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
-        self._ed_simple_query_srv = rospy.ServiceProxy('/%s/ed/simple_query'%robot_name, SimpleQuery)
-        self._ed_entity_info_query_srv = rospy.ServiceProxy('/%s/ed/gui/get_entity_info'%robot_name, GetEntityInfo)
-        self._ed_update_srv = rospy.ServiceProxy('/%s/ed/update'%robot_name, UpdateSrv)
+        self._ed_simple_query_srv = create_service_client('/%s/ed/simple_query' % robot_name, SimpleQuery)
+        self._ed_entity_info_query_srv = create_service_client('/%s/ed/gui/get_entity_info' % robot_name, GetEntityInfo)
+        self._ed_update_srv = create_service_client('/%s/ed/update' % robot_name, UpdateSrv)
         # self._ed_lock_entities_srv = rospy.ServiceProxy('/%s/ed/kinect/lock_entities'%robot_name, LockEntities)
-        # self._ed_mesh_entity_in_view_srv = rospy.ServiceProxy('/%s/ed/kinect/mesh_entity_in_view'%robot_name, MeshEntityInView)
+        # self._ed_mesh_entity_in_view_srv = rospy.ServiceProxy('/%s/ed/kinect/mesh_entity_in_view'%robot_name,
+        # MeshEntityInView)
         # self._ed_segment_srv = rospy.ServiceProxy('/%s/ed/kinect/segment'%robot_name, Segment)
-        self._ed_kinect_update_srv = rospy.ServiceProxy('/%s/ed/kinect/update'%robot_name, ed_sensor_integration.srv.Update)
+        self._ed_kinect_update_srv = create_service_client('/%s/ed/kinect/update' % robot_name,
+                                                           ed_sensor_integration.srv.Update)
 
-        self._ed_classify_srv = rospy.ServiceProxy('/%s/ed/classify'%robot_name, Classify)
-        self._ed_perception_add_training_instance_srv = rospy.ServiceProxy('/%s/ed/add_training_instance'%robot_name, AddTrainingInstance)
-        self._ed_configure_srv = rospy.ServiceProxy('/%s/ed/configure'%robot_name, Configure)
+        self._ed_classify_srv = create_service_client('/%s/ed/classify' % robot_name, Classify)
+        self._ed_perception_add_training_instance_srv = create_service_client('/%s/ed/add_training_instance' %
+                                                                              robot_name, AddTrainingInstance)
+        self._ed_configure_srv = create_service_client('/%s/ed/configure' % robot_name, Configure)
 
-        self._ed_reset_srv = rospy.ServiceProxy('/%s/ed/reset'%robot_name, ed.srv.Reset)
+        self._ed_reset_srv = create_service_client('/%s/ed/reset' % robot_name, ed.srv.Reset)
 
-        self._ed_get_image_srv = rospy.ServiceProxy('/%s/ed/kinect/get_image'%robot_name, ed_sensor_integration.srv.GetImage)
+        self._ed_get_image_srv = create_service_client('/%s/ed/kinect/get_image' % robot_name,
+                                                       ed_sensor_integration.srv.GetImage)
 
         # Person recognition
-        self._learn_person_srv = rospy.ServiceProxy('/%s/learn_person'%robot_name, ed_perception.srv.LearnPerson)
-        self._clear_persons_srv = rospy.ServiceProxy('/%s/clear_persons' % robot_name, Empty)
-        self._recognize_person_srv = rospy.ServiceProxy('/%s/recognize_person'%robot_name, ed_perception.srv.RecognizePerson)
+        self._learn_person_srv = create_service_client('/%s/learn_person' % robot_name, ed_perception.srv.LearnPerson)
+        self._clear_persons_srv = create_service_client('/%s/clear_persons' % robot_name, Empty)
+        self._recognize_person_srv = create_service_client('/%s/recognize_person' % robot_name,
+                                                           ed_perception.srv.RecognizePerson)
 
         self.navigation = Navigation(robot_name)
 
-        self._marker_publisher = rospy.Publisher("/" + robot_name + "/ed/simple_query",  visualization_msgs.msg.Marker, queue_size=10)
+        self._marker_publisher = rospy.Publisher("/" + robot_name + "/ed/simple_query",  visualization_msgs.msg.Marker,
+                                                 queue_size=10)
 
     # ----------------------------------------------------------------------------------------------------
     #                                           CONFIGURATION
@@ -125,7 +131,6 @@ class ED(BodyPart):
         rospy.logerr("[ED]: While requesting '%s': %s" % (yaml, resp.error_msg))
         return False
 
-
     # ----------------------------------------------------------------------------------------------------
     #                                             QUERYING
     # ----------------------------------------------------------------------------------------------------
@@ -141,7 +146,8 @@ class ED(BodyPart):
         try:
             entities = self._ed_simple_query_srv(query).entities
         except Exception, e:
-            rospy.logerr("ERROR: robot.ed.get_entities(id=%s, type=%s, center_point=%s, radius=%s)" % (id, type, str(center_point), str(radius)))
+            rospy.logerr("ERROR: robot.ed.get_entities(id=%s, type=%s, "
+                         "center_point=%s, radius=%s)" % (id, type, str(center_point), str(radius)))
             rospy.logerr("L____> [%s]" % e)
             return []
 
@@ -159,14 +165,15 @@ class ED(BodyPart):
         entities = self.get_entities(type="", center_point=center_point, radius=radius)
 
         # HACK
-        entities = [ e for e in entities if len(e.convex_hull) > 0 and e.type == "" ]
+        entities = [e for e in entities if len(e.convex_hull) > 0 and e.type == ""]
 
         if len(entities) == 0:
             return None
 
         # Sort by distance
         try:
-            entities = sorted(entities, key=lambda entity: hypot(center_point.x - entity.pose.position.x, center_point.y - entity.pose.position.y))
+            entities = sorted(entities, key=lambda entity: hypot(center_point.x - entity.pose.position.x,
+                                                                 center_point.y - entity.pose.position.y))
         except:
             print "Failed to sort entities"
             return None
@@ -187,7 +194,8 @@ class ED(BodyPart):
 
         # Sort by distance
         try:
-            entities = sorted(entities, key=lambda entity: hypot(center_point.x - entity.pose.position.x, center_point.y - entity.pose.position.y))
+            entities = sorted(entities, key=lambda entity: hypot(center_point.x - entity.pose.position.x,
+                                                                 center_point.y - entity.pose.position.y))
         except:
             print "Failed to sort entities"
             return None
@@ -221,13 +229,15 @@ class ED(BodyPart):
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def update_entity(self, id, type = None, posestamped = None, flags = None, add_flags = [], remove_flags = [], action = None):
+    def update_entity(self, id, type = None, posestamped = None, flags = None, add_flags = [], remove_flags = [],
+                      action = None):
         """
         Updates entity
         :param id: entity id
         :param type: entity type
         :param posestamped: ???
-        :param flags: (OBSOLETE, use add_flags and remove_flags): (list of) dict(s) containing key 'add' or 'remove' and value of the flag to set,  e.g., 'perception'
+        :param flags: (OBSOLETE, use add_flags and remove_flags): (list of) dict(s) containing key 'add' or 'remove'
+        and value of the flag to set,  e.g., 'perception'
         :param add_flags: list of flags which will be added to the specified entity
         :param remove_flags: list of flags which will removed from the specified entity
         :param action: update_action, e.g. remove
@@ -240,9 +250,13 @@ class ED(BodyPart):
             json_entity += ', "action": "%s"' % action
 
         if posestamped:
-            X, Y, Z = tf.transformations.euler_from_quaternion([posestamped.pose.orientation.x, posestamped.pose.orientation.y, posestamped.pose.orientation.z, posestamped.pose.orientation.w])
+            X, Y, Z = tf.transformations.euler_from_quaternion([posestamped.pose.orientation.x,
+                                                                posestamped.pose.orientation.y,
+                                                                posestamped.pose.orientation.z,
+                                                                posestamped.pose.orientation.w])
             t = posestamped.pose.position
-            json_entity += ', "pose": { "x": %f, "y": %f, "z": %f, "X": %f, "Y": %f, "Z": %f }' % (t.x, t.y, t.z, X, Y, Z)
+            json_entity += ', "pose": { "x": %f, "y": %f, "z": %f, "X": %f, "Y": %f, "Z": %f }' % (t.x, t.y, t.z,
+                                                                                                   X, Y, Z)
 
         if flags or add_flags or remove_flags:
             json_entity += ', "flags": ['
@@ -256,7 +270,7 @@ class ED(BodyPart):
                     if not isinstance(flag, dict):
                         print "update_entity - Error: flags need to be a list of dicts or a dict"
                         return False
-                    for k,v in flag.iteritems():
+                    for k, v in flag.iteritems():
                         if not first:
                             json_entity += ','
                         json_entity += '{"%s":"%s"}' % (k,v)
@@ -276,7 +290,7 @@ class ED(BodyPart):
 
             json_entity += ']'
 
-        json = '{"entities":[{%s}]}'%json_entity
+        json = '{"entities":[{%s}]}' % json_entity
         print json
 
         return self._ed_update_srv(request=json)
@@ -301,16 +315,16 @@ class ED(BodyPart):
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def get_closest_possible_person_entity(self, type="", center_point=Point(), radius=0, room = ""):
+    def get_closest_possible_person_entity(self, type="", center_point=Point(), radius=0, room=""):
         if isinstance(center_point, PointStamped):
             center_point = self._transform_center_point_to_map(center_point)
 
         entities = self.get_entities(type="", center_point=center_point, radius=radius)
-        #print "entities 1 in get_closest_possible_person_entity = ", entities
+        # print "entities 1 in get_closest_possible_person_entity = ", entities
 
         # HACK
         entities = [ e for e in entities if len(e.convex_hull) > 0 and e.type == "" and 'possible_human' in e.flags ]
-        #print "entities 2 in get_closest_possible_person_entity = ", entities
+        # print "entities 2 in get_closest_possible_person_entity = ", entities
 
         # if only the persons in a certain room should be found:
         # if not (room == "" and len(entities) == 0):
@@ -325,7 +339,8 @@ class ED(BodyPart):
         #     y_min_room = room_entity.data['areas'][0]['shape'][0]['box']['min']['y']+room_entity.data['pose']['y']
         #     print "y_min_room = ", y_min_room
 
-        #     entities = [e for e in entities if e.pose.position.x > x_min_room and e.pose.position.x < x_max_room and e.pose.position.y > y_min_room and e.pose.position.y < y_max_room]
+        #     entities = [e for e in entities if e.pose.position.x > x_min_room and e.pose.position.x < x_max_room and
+        # e.pose.position.y > y_min_room and e.pose.position.y < y_max_room]
 
         #     print "entities sorted in room = ", entities
 
@@ -350,9 +365,11 @@ class ED(BodyPart):
         """
         Update ED based on kinect (depth) images
 
-        :param area_description An entity id or area description, e.g. "a08d537e-e051-11e5-a34e-6cc217ec9f41" or "on_top_of cabinet-11"
-        :param background_padding The maximum distance to which kinect data points are associated to existing objects (in meters).
-               Or, in other words: the padding that is added to existing objects before they are removed from the point cloud
+        :param area_description An entity id or area description, e.g. "a08d537e-e051-11e5-a34e-6cc217ec9f41" or
+        "on_top_of cabinet-11"
+        :param background_padding The maximum distance to which kinect data points are associated to existing objects
+        (in meters). Or, in other words: the padding that is added to existing objects before they are removed from the
+        point cloud
         :returns Update result
         """
 
@@ -367,8 +384,9 @@ class ED(BodyPart):
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def get_perception_model_path(self, perception_model_name = ""):
-        import rospkg
+    @staticmethod
+    def get_perception_model_path(perception_model_name = ""):
+
         rospack = rospkg.RosPack()
 
         try:
@@ -411,7 +429,9 @@ class ED(BodyPart):
                 # for idx, id, type in enumerate (res.ids):
                 # print "TODO: finish type filtering in Classification"
                 posteriors = [dict(zip(distr.values, distr.probabilities)) for distr in res.posteriors]
-                return [ClassificationResult(_id, exp_val, exp_prob, distr) for _id, exp_val, exp_prob, distr in zip(res.ids, res.expected_values, res.expected_value_probabilities, posteriors) if exp_val in types]
+                return [ClassificationResult(_id, exp_val, exp_prob, distr) for _id, exp_val, exp_prob, distr in
+                        zip(res.ids, res.expected_values, res.expected_value_probabilities, posteriors) if exp_val in
+                        types]
             else:
                 # This is what we do in simulation
                 import random
@@ -430,10 +450,12 @@ class ED(BodyPart):
                     self.update_entity(id=id, type=exvalues[-1])
 
                     print "ID: {0}: {1} (prob = {2})".format(id, exvalues[-1], exprobs[-1])
-                return [ClassificationResult(_id, exp_val, exp_prob, distr) for _id, exp_val, exp_prob, distr in zip(ids, exvalues, exprobs, posteriors) if exp_val in types]
+                return [ClassificationResult(_id, exp_val, exp_prob, distr) for _id, exp_val, exp_prob, distr in
+                        zip(ids, exvalues, exprobs, posteriors) if exp_val in types]
         else:
             posteriors = [dict(zip(distr.values, distr.probabilities)) for distr in res.posteriors]
-            return [ClassificationResult(_id, exp_val, exp_prob, distr) for _id, exp_val, exp_prob, distr in zip(res.ids, res.expected_values, res.expected_value_probabilities, posteriors)]
+            return [ClassificationResult(_id, exp_val, exp_prob, distr) for _id, exp_val, exp_prob, distr in
+                    zip(res.ids, res.expected_values, res.expected_value_probabilities, posteriors)]
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -449,7 +471,8 @@ class ED(BodyPart):
         if not perception_model_path:
             return False
 
-        res = self._ed_perception_add_training_instance_srv(id = id, property = property, value = value, perception_models_path = perception_model_path)
+        res = self._ed_perception_add_training_instance_srv(id=id, property=property, value=value,
+                                                            perception_models_path=perception_model_path)
         if res.error_msg:
             rospy.logerr("While adding perception training instance: %s" % res.error_msg)
             return False
@@ -460,7 +483,7 @@ class ED(BodyPart):
 
     def clear_persons(self):
         try:
-            res = self._clear_persons_srv()
+            self._clear_persons_srv()
         except rospy.ServiceException, e:
             rospy.logerr("Could not Reset Persons ED: {0}".format(e))
         return True
@@ -494,7 +517,7 @@ class ED(BodyPart):
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    def save_image(self, path = "", path_suffix = "", filename = ""):
+    def save_image(self, path="", path_suffix = "", filename = ""):
         import os
         import time
 
@@ -544,7 +567,8 @@ class ED(BodyPart):
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
     def _transform_center_point_to_map(self, pointstamped):
-        point_in_map = transformations.tf_transform(pointstamped.point, pointstamped.header.frame_id, "/map", self.tf_listener)
+        point_in_map = transformations.tf_transform(pointstamped.point, pointstamped.header.frame_id, "/map",
+                                                    self.tf_listener)
         return point_in_map
 
     # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -573,7 +597,6 @@ class ED(BodyPart):
 
     def configure_kinect_segmentation(self, continuous=None, max_sensor_range=0):
         raise NotImplementedError("Method 'configure_kinect_segmentation' has become obsolete - don't use it")
-
 
     def configure_perception(self, continuous):
         raise NotImplementedError("Method 'configure_perception' has become obsolete - don't use it")

@@ -5,6 +5,7 @@ import rospy
 from dragonfly_speech_recognition.msg import Choice
 from dragonfly_speech_recognition.srv import GetSpeech, GetSpeechRequest
 from body_part import BodyPart
+from .util.ros_connections import create_service_client
 
 
 class Ears(BodyPart):
@@ -24,7 +25,6 @@ class Ears(BodyPart):
             pre_hook:
             post_hook:
         """
-        self._get_speech_client_service = rospy.ServiceProxy("/%s/speech_client/get_speech"%robot_name, GetSpeech)
         self._pre_hook = pre_hook
         self._post_hook = post_hook
 

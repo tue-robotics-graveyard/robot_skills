@@ -28,6 +28,8 @@ import reasoner
 import geometry_msgs
 from collections import OrderedDict
 
+from .util.ros_connections import wait_for_connections
+
 
 class Robot(object):
     """
@@ -72,6 +74,8 @@ class Robot(object):
         #Grasp offsets
         #TODO: Don't hardcode, load from parameter server to make robot independent.
         self.grasp_offset = geometry_msgs.msg.Point(0.5, 0.2, 0.0)
+
+        wait_for_connections(1.0)
 
     def standby(self):
         if not self.robot_name == 'amigo':
