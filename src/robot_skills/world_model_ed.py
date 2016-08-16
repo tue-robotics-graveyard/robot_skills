@@ -1,6 +1,18 @@
 #! /usr/bin/env python
+
+from math import hypot
+import yaml
+
+# ROS
 import rospy
 import rospkg
+from geometry_msgs.msg import Point, PointStamped
+from std_srvs.srv import Empty
+import tf
+import visualization_msgs.msg
+
+# TU/e
+import ed.srv
 from ed.srv import SimpleQuery, SimpleQueryRequest, UpdateSrv, Configure
 # from ed_sensor_integration.srv import LockEntities, MeshEntityInView, Segment
 import ed_sensor_integration.srv
@@ -9,22 +21,11 @@ from ed_perception.srv import Classify, AddTrainingInstance
 from ed_gui_server.srv import GetEntityInfo
 from ed_navigation.srv import GetGoalConstraint
 from cb_planner_msgs_srvs.msg import PositionConstraint
-from geometry_msgs.msg import Point, PointStamped
-from math import hypot
-
-from .util import transformations
-
-import ed.srv
-from std_srvs.srv import Empty
-
-import tf
-import visualization_msgs.msg
-
-import yaml
-
 from body_part import BodyPart
+from .util import transformations
 from .classification_result import ClassificationResult
-from .util.ros_connections import create_simple_action_client, create_service_client
+from .util.ros_connections import create_service_client
+
 
 class Navigation(object):
     """ Interface to ED navigation plugin """
@@ -56,7 +57,7 @@ class ED(BodyPart):
     """ Interface to the Environment Descriptor world model
     """
 
-    def __init__(self, robot_name, tf_listener, wait_service=False):
+    def __init__(self, robot_name, tf_listener):
         """ Constructor
 
         Args:

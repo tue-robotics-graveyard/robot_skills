@@ -25,10 +25,12 @@ class Ears(BodyPart):
             pre_hook:
             post_hook:
         """
+        super(Ears, self).__init__(robot_name=robot_name, tf_listener=tf_listener)
         self._pre_hook = pre_hook
         self._post_hook = post_hook
 
-    #Function listens explained on wiki: http://servicerobot.cstwiki.wtb.tue.nl/index.php?title=Using_the_dragonfly_speech_recognition
+    # Function listens explained on wiki:
+    # http://servicerobot.cstwiki.wtb.tue.nl/index.php?title=Using_the_dragonfly_speech_recognition
     def recognize(self, spec, choices={}, time_out=rospy.Duration(10)):
 
         if hasattr(self._pre_hook, '__call__'):

@@ -1,7 +1,11 @@
 #! /usr/bin/env python
+
+# ROS
 import rospy
-from amigo_msgs.msg import RGBLightCommand
 from std_msgs.msg import ColorRGBA
+
+# TU/e
+from amigo_msgs.msg import RGBLightCommand
 
 
 class Lights:
@@ -10,18 +14,19 @@ class Lights:
     """
 
     def __init__(self, robot_name):
-        self._topic = rospy.Publisher('/'+robot_name+'/rgb_lights_manager/user_set_rgb_lights', RGBLightCommand, queue_size=10)
+        self._topic = rospy.Publisher('/'+robot_name+'/rgb_lights_manager/user_set_rgb_lights', RGBLightCommand,
+                                      queue_size=10)
 
     def close(self):
         pass
 
-    def set_color(self, r,g,b,a=1.0):
-        rgb_msg = RGBLightCommand(color=ColorRGBA(r,g,b,a))
+    def set_color(self, r, g, b, a=1.0):
+        rgb_msg = RGBLightCommand(color=ColorRGBA(r, g, b, a))
         rgb_msg.show_color.data = True
         self._topic.publish(rgb_msg)
 
     def reset(self):
-        rgb_msg = RGBLightCommand(color=ColorRGBA(0.0,0.0,1.0,1.0))
+        rgb_msg = RGBLightCommand(color=ColorRGBA(0.0, 0.0, 1.0, 1.0))
         rgb_msg.show_color.data = True
         self._topic.publish(rgb_msg)
 

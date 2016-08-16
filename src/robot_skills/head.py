@@ -1,6 +1,7 @@
 #! /usr/bin/env python
+
+# ROS
 import rospy
-from actionlib import SimpleActionClient
 from geometry_msgs.msg import PointStamped
 
 # TU/e

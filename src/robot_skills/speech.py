@@ -1,5 +1,9 @@
 #! /usr/bin/env python
+
+# ROS
 import rospy
+
+# TU/e
 from text_to_speech.srv import Speak, SpeakRequest
 from body_part import BodyPart
 from .util.ros_connections import create_service_client
@@ -8,7 +12,7 @@ from .util.ros_connections import create_service_client
 class Speech(BodyPart):
     """Interface to TTS-module"""
 
-    def __init__(self, robot_name, tf_listener, wait_service=True, pre_hook=None, post_hook=None):
+    def __init__(self, robot_name, tf_listener, pre_hook=None, post_hook=None):
         """ Constructor
 
         Args:
@@ -57,9 +61,9 @@ class Speech(BodyPart):
 
         try:
             if language == 'nl' and not (personality in ['david', 'marjolein']):
-                personality = 'david' #kyle doesn't work for NL
+                personality = 'david' # kyle doesn't work for NL
             # The funny stuff around sentence is for coloring the output text in the console
-            rospy.loginfo("\x1b[1;32m'"+ sentence + "'\x1b[0m")
+            rospy.loginfo("\x1b[1;32m'" + sentence + "'\x1b[0m")
 
             req = SpeakRequest()
             req.language = language

@@ -7,10 +7,10 @@
 
 import math
 
+# ROS
 import geometry_msgs.msg
 import rospy
 import tf
-from actionlib import SimpleActionClient
 
 # TU/e
 from cb_planner_msgs_srvs.msg import LocalPlannerAction, OrientationConstraint, PositionConstraint, LocalPlannerGoal
@@ -161,7 +161,7 @@ class GlobalPlanner(object):
 class Base(BodyPart):
     """ Interface to the driving platform of the robots
     """
-    def __init__(self, robot_name, tf_listener, wait_service=True, use_2d=None):
+    def __init__(self, robot_name, tf_listener):
         """ Constructor
 
         Args:

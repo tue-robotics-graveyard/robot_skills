@@ -1,7 +1,7 @@
 #! /usr/bin/env python
 import threading
 
-import actionlib
+# ROS
 import control_msgs.msg
 import rospy
 import trajectory_msgs.msg
@@ -16,7 +16,7 @@ from .util.ros_connections import create_simple_action_client
 
 class Torso(BodyPart):
     """ Interface to the torso joints """
-    def __init__(self, robot_name, tf_listener, wait_service=False):
+    def __init__(self, robot_name, tf_listener):
         """ Constructor
 
         Args:
